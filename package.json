@@ -1,0 +1,8 @@
+{
+  "name":"jajigo-gemini-secure-ai",
+  "version":"1.1.0",
+  "private":true,
+  "main":"server.js",
+  "scripts":{"start":"node server.js"},
+  "dependencies":{"@google/genai":"latest","cors":"latest","dotenv":"latest","express":"latest","express-rate-limit":"latest"}
+}
