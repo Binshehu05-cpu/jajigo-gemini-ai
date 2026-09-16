@@ -60,7 +60,7 @@ async function generateWithRetry(request, attempts = 3) {
   let lastError;
   for (let i = 0; i < attempts; i++) {
     try {
-      return await withTimeout(ai.models.generateContent(request), 10000);
+      return await withTimeout(ai.models.generateContent(request), 30000);
     } catch (err) {
       lastError = err;
       const rawError = String(err?.message || err || ""); const code = Number(err?.status || err?.code || err?.error?.code || (rawError.match(/"code"\s*:\s*(\d+)/)?.[1] || 0));
