@@ -55,6 +55,21 @@ function parseActions(reply) {
   if (ticket) { actions.supportTicket = ticket[1].trim(); reply = reply.replace(ticket[0],'').trim(); }
   return { reply, actions };
 }
+async function generateWithRetry(request, attempts = 3) {
+  let lastError;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await ai.models.generateContent(request);
+    } catch (err) {
+      lastError = err;
+      const code = err?.status || err?.code || err?.error?.code;
+      if (code !== 503 && code !== 429) throw err;
+      if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+    }
+  }
+  throw lastError;
+}
+
 
 app.get('/', (req,res) => res.json({ service:'JajiGo Gemini AI Backend', ready:!!ai, model:MODEL }));
 app.get('/api/ai/health', (req,res) => res.json({ ready:!!ai, provider:'gemini', model:MODEL }));
@@ -64,7 +79,7 @@ app.post('/api/ai/chat', async (req,res) => {
     const message = text(req.body?.message,4000);
     if (!message) return res.status(400).json({ error:'Message is required.' });
     const context = cleanContext(req.body?.context);
-    const response = await ai.models.generateContent({
+    const response = await generateWithRetry({
       model: MODEL,
       contents: buildContents(req.body?.history, message),
       config: { systemInstruction: systemPrompt(context), temperature:0.5, maxOutputTokens:500 }
