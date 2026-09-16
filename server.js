@@ -55,15 +55,16 @@ function parseActions(reply) {
   if (ticket) { actions.supportTicket = ticket[1].trim(); reply = reply.replace(ticket[0],'').trim(); }
   return { reply, actions };
 }
+function withTimeout(promise, ms = 15000) { return Promise.race([promise, new Promise((_, reject) => setTimeout(() => reject(new Error("Gemini request timed out")), ms))]); }
 async function generateWithRetry(request, attempts = 3) {
   let lastError;
   for (let i = 0; i < attempts; i++) {
     try {
-      return await ai.models.generateContent(request);
+      return await withTimeout(ai.models.generateContent(request), 10000);
     } catch (err) {
       lastError = err;
       const rawError = String(err?.message || err || ""); const code = Number(err?.status || err?.code || err?.error?.code || (rawError.match(/"code"\s*:\s*(\d+)/)?.[1] || 0));
-      if (code !== 503 && code !== 429 && !/high demand|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(rawError)) throw err;
+      if (code !== 503 && code !== 429 && !/high demand|UNAVAILABLE|RESOURCE_EXHAUSTED|timed out/i.test(rawError)) throw err;
       if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
     }
   }
@@ -90,7 +91,7 @@ app.post('/api/ai/chat', async (req,res) => {
     res.json({ reply:parsed.reply, actions:parsed.actions, provider:'gemini' });
   } catch (err) {
     console.error('JajiGo AI error:', err);
-    res.status(500).json({ error:'JajiGo AI could not complete that request right now.' });
+    res.status(503).json({ error:'JajiGo AI is temporarily busy. Please try again in a moment.' });
   }
 });
 const PORT = Number(process.env.PORT || 3000);
