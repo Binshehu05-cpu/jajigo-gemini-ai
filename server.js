@@ -62,8 +62,8 @@ async function generateWithRetry(request, attempts = 3) {
       return await ai.models.generateContent(request);
     } catch (err) {
       lastError = err;
-      const code = err?.status || err?.code || err?.error?.code;
-      if (code !== 503 && code !== 429) throw err;
+      const rawError = String(err?.message || err || ""); const code = Number(err?.status || err?.code || err?.error?.code || (rawError.match(/"code"\s*:\s*(\d+)/)?.[1] || 0));
+      if (code !== 503 && code !== 429 && !/high demand|UNAVAILABLE|RESOURCE_EXHAUSTED/i.test(rawError)) throw err;
       if (i < attempts - 1) await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
     }
   }
