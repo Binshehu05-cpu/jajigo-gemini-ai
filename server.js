@@ -74,7 +74,7 @@ app.post('/api/ai/chat', async (req,res) => {
     const parsed = parseActions(raw);
     res.json({ reply:parsed.reply, actions:parsed.actions, provider:'gemini' });
   } catch (err) {
-    console.error('JajiGo AI error:', err?.message || err);
+    console.error('JajiGo AI error:', err);
     res.status(500).json({ error:'JajiGo AI could not complete that request right now.' });
   }
 });
